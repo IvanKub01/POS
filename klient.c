@@ -13,7 +13,57 @@
 #include <string.h>
 #include <unistd.h>
 #include<ctype.h>
+int nacitajUlozHfromS(int sockfd){
+    char buffer[512];
+    bzero(buffer,512);
+    int pocet;
+    int n = read(sockfd, &pocet, sizeof(int));
+    if (n < 0)
+    {
+        perror("Error reading from socket");
+        return 6;
+    }
 
+    printf("toto je pocet slov na serveri %d\n",pocet);
+
+    int help=0;
+    bzero(buffer,512);
+    printf("toto nam server poslal naspat\n");
+    while(help != pocet)
+    {
+        read(sockfd , buffer , 512);
+        printf("%d.  %s\n" ,help ,buffer);
+        //printf(" %s %d \n"  , buffer , ch); //Line for Testing , Ignore
+        help++;
+    }
+    return 0;
+}
+void nacitajMaticu(int matica[],int x ,int y){
+    FILE *f = fopen("glad.txt", "w");
+    if (f == NULL)
+    {
+        printf("Error opening file nacitajMaticu!\n");
+        exit(1);
+    }
+
+/*    printf("nacitaj meno\n");
+    char text[10000];
+    scanf("%s",&text);
+    printf("%s\n",text);*/
+    const char *text = "@Nazov7";
+    fprintf(f, "%s\n", text);
+    fprintf(f, "%d\n", x);
+    fprintf(f, "%d\n", y);
+
+
+    for (int j = 0; j < (x*y); ++j) {
+        fprintf(f, "%d\n", matica[j]);
+
+    }
+
+
+    fclose(f);
+}
 void posliServer(int sockfd){
     char buffer[512];
     bzero(buffer,512);
@@ -59,8 +109,7 @@ void posliServer(int sockfd){
 }
 int goKlient(int argc, char *argv[])
 {
-    char buffer[512];
-    bzero(buffer,512);
+
     printf("Som v klientovi\n");
 
     int sockfd, n;
@@ -103,33 +152,22 @@ int goKlient(int argc, char *argv[])
         perror("Error connecting to socket");
         return 4;
     }
-
-
+    int x = 3;
+    int y = 2;
+    int matica[x*y];
+    for (int i = 0; i < (x*y); ++i) {
+        matica[i] = rand() %2;
+    }
+    nacitajMaticu(matica,x,y);
     posliServer(sockfd);
+    nacitajUlozHfromS(sockfd);
 
     //pocet slov na serveri
-    int pocet;
-    n = read(sockfd, &pocet, sizeof(int));
-    if (n < 0)
-    {
-        perror("Error reading from socket");
-        return 6;
-    }
-
-    printf("toto je pocet slov na serveri %d\n",pocet);
-
-    int help=0;
-    bzero(buffer,512);
-    printf("toto nam server poslal naspat\n");
-    while(help != pocet)
-    {
-        read(sockfd , buffer , 512);
-        printf("%d.  %s\n" ,help ,buffer);
-        //printf(" %s %d \n"  , buffer , ch); //Line for Testing , Ignore
-        help++;
-    }
 
     close(sockfd);
-
+    printf("zadaj cislo\n");
+    int cislo=0;
+    scanf("%d",&cislo);
+    printf("%d\n",cislo);
     return 0;
 }
