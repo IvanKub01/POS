@@ -4,6 +4,7 @@
 
 #ifndef UNTITLED3_KLIENT_H
 #define UNTITLED3_KLIENT_H
-int goKlient(int argc, char *argv[]);
+
+_Noreturn int goKlient(int argc, char *argv[]);
 
 #endif //UNTITLED3_KLIENT_H

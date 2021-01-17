@@ -12,93 +12,81 @@
 #include <unistd.h>
 #include<ctype.h>
 #include <string.h>
+#include <limits.h>
+
+#define maxSirka 100
+
+#define maxVyska 100
 
 
-void ukladanie(int newsockfd){
-    char buffer[512];
-
-    FILE *fp;
-    int ch = 0;
-
-    fp = fopen("glad_receive.txt","a");
-    int words;
-    read(newsockfd, &words, sizeof(int));
-    printf("Passed integer is : %d\n" , words);      //Ignore , Line for Testing
-
-    while(ch != words)
-    {
-        read(newsockfd , buffer , 512);
-        fprintf(fp , " %s\n" , buffer);
-        //printf(" %s %d \n"  , buffer , ch); //Line for Testing , Ignore
-        ch++;
+int nacitajPoziadavkuNaCinnost(int newsockfd){
+    int vyberS = -1;
+    while(vyberS == -1) {
+        read(newsockfd, &vyberS, sizeof(int));
     }
-    fclose(fp);
+    printf("Vyber cinnosti je %d\n", vyberS);
+    return vyberS;
 }
-int goServer(int argc, char *argv[])
-{
-    printf("Som v serveri\n");
-    int sockfd, newsockfd;
-    socklen_t cli_len;
-    struct sockaddr_in serv_addr, cli_addr;
-    int n;
-    char buffer[512];
 
-    if (argc < 2)
+void posliVybrasSaveKlientovi(int newsockfd, int vyberS){
+    printf("idem poslat klinetovi save\n");
+    char buffer[maxSirka * maxVyska + 20];
+    FILE *ft;
+    char ct;
+    int help = -1;
+
+
+    ft=fopen("glad_receive.txt","r");
+    if (! ft )
     {
-        fprintf(stderr,"usage %s port\n", argv[0]);
-        return 1;
-    }
-
-    bzero((char*)&serv_addr, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons(atoi(argv[2]));
-
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0)
-    {
-        perror("Error creating socket");
-        return 1;
-    }
-
-    if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
-    {
-        perror("Error binding socket address");
-        return 2;
-    }
-
-    listen(sockfd, 5);
-    cli_len = sizeof(cli_addr);
-
-    newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &cli_len);
-    if (newsockfd < 0)
-    {
-        perror("ERROR on accept");
-        return 3;
+        printf("oops, file can't be read\n");
+        exit(-1);
     }
 
 
-
-    printf("Som dnu\n");      //Ignore , Line for Testing
-
-
-    ukladanie(newsockfd);
-    printf("Ideme spocitat kolko slov mame na serveri\n");
-
-
-
-    /*printf("Here is the message: %s\n", buffer);
-
-    const char* msg = "I got your message";
-    n = write(newsockfd, msg, strlen(msg)+1);
-
-
-    if (n < 0)
+    while((ct=getc(ft))!=EOF)			//Counting No of words in the file
     {
-        perror("Error writing to socket");
-        return 5;
-    }*/
-    // ulpoad from server to client///////////////////////////////////////
+
+        fscanf(ft , "%s" , buffer);
+
+        //printf("%s\n" , buffer);	//Ignore
+
+
+        char ci = buffer[0];
+        //Ignore
+        char ci2 = buffer[1];
+        //printf("%c %c\n",ci,ci2);
+
+        if ((strncmp(&ci,"@\n",1) == 0)&&(isspace(ct)||ct=='\t')){
+
+            help++;
+            printf("%d\n", help);
+        }
+        if (help==vyberS) {
+            printf("while cyklus\n");
+            printf("matica %s\n", buffer);
+            write(newsockfd, buffer, 512);
+        }
+        //printf("%d",strcmp(buffer[0],"@"));
+        //printf("%d",strcmp(buffer[1],"@"));
+
+    }
+
+    fclose(ft);
+}
+int nacitajPoradoveCislo(int newsockfd){
+    int vyberS = -1;
+    while(vyberS == -1) {
+
+        read(newsockfd, &vyberS, sizeof(int));
+
+    }
+    printf("Vyber je %d\n", vyberS);
+    return vyberS;
+}
+void nacitanieUlozH(int newsockfd){
+
+    char buffer[maxSirka * maxVyska + 20];
     FILE *ff;
 
     int wordss = 0;
@@ -107,7 +95,7 @@ int goServer(int argc, char *argv[])
     printf("Zaciname pocitat slova na Serveri\n");
 
     ff=fopen("glad_receive.txt","r");
-    if (! ff ) // equivalent to saying if ( in_file == NULL )
+    if (! ff )
     {
         printf("oops, file can't be read\n");
         exit(-1);
@@ -118,16 +106,21 @@ int goServer(int argc, char *argv[])
     {
         fscanf(ff , "%s" , buffer);
 
-        //printf("%s\n" , buffer);	//Ignore
 
-        if((isspace(cc)||cc=='\t'))
+        printf("%s\n" , buffer);	//Ignore
+
+        if((isspace(cc)||cc=='\t')){
             wordss++;
+        }
         char ci = buffer[0];
-        	//Ignore
+        //Ignore
         char ci2 = buffer[1];
         //printf("%c %c\n",ci,ci2);
-        if (strncmp(&ci,"@",1) == 0){
+
+        if ((strncmp(&ci,"@\n",1) == 0)&&(isspace(cc)||cc=='\t')){
+
             numberOfSaves++;
+
             //printf("y. %s\n",buffer);
 
         }
@@ -135,7 +128,13 @@ int goServer(int argc, char *argv[])
         //printf("%d",strcmp(buffer[1],"@"));
 
     }
-    printf("Posielam Words = %d \n"  , wordss);	//Ignore
+
+    numberOfSaves -= 3;
+
+    printf("Posielam Words = %d \n"  , wordss);
+
+    printf("Posielam numberOfSaves = %d \n"  , numberOfSaves);
+
     write(newsockfd,&numberOfSaves,sizeof(int));
 
     printf("Idem posielat zoznam ulozenych hier zo txt Servera num \n");
@@ -169,12 +168,91 @@ int goServer(int argc, char *argv[])
     }
     printf("poslane zo servera\n");
     fclose(ff);
+}
 
+void ukladanie(int newsockfd){
+    printf("ukladanie\n");
 
+    char buffer[maxSirka * maxVyska + 20];
 
+    FILE *fp;
+    int ch = 0;
 
+    fp = fopen("glad_receive.txt","a");
+    int words;
+    read(newsockfd, &words, sizeof(int)); // nacita pocet slov v glad.txt aby vedel kolko nacitat
+    printf("Klient poslav správu z poctom slov : %d, ktoré sa nachádzali v glad.txt\n" , words);
+
+    while(ch != words) // zapise to do glad_receive.txt
+    {
+        read(newsockfd , buffer , 512);
+        fprintf(fp , " %s\n" , buffer);
+        printf(" server %s \n"  , buffer); //Line for Testing , Ignore
+        ch++;
+    }
+    printf("glad.txt sa nakopíroval do glad_receive.txt\n");
+    fclose(fp);
+}
+
+int goServer(int argc, char *argv[])
+{
+    int cinnost = 1;
+    printf("Som v serveri\n");
+    int sockfd, newsockfd;
+    socklen_t cli_len;
+    struct sockaddr_in serv_addr, cli_addr;
+
+    if (argc < 2)
+    {
+        fprintf(stderr,"usage %s port\n", argv[0]);
+        return 1;
+    }
+    bzero((char*)&serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(atoi(argv[2]));
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0)
+    {
+        perror("Error creating socket");
+        return 1;
+    }
+    if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0)
+    {
+        perror("Error binding socket address");
+        return 2;
+    }
+    listen(sockfd, INT64_MAX);
+    cli_len = sizeof(cli_addr);
+    while(cinnost != 2) {
+        newsockfd = accept(sockfd, (struct sockaddr*)&cli_addr, &cli_len);
+        if (newsockfd < 0)
+        {
+            perror("ERROR on accept");
+            return 3;
+        }
+        printf("Som dnu\n");      //Ignore , Line for Testing
+
+        cinnost = nacitajPoziadavkuNaCinnost(newsockfd);
+        printf("%d\n", cinnost);
+
+        if (cinnost == 0) {
+            ukladanie(newsockfd);//nacita nazvy glad.txt a ulozi ho
+            printf("Ideme spocitat kolko slov mame na serveri\n");
+        } else if (cinnost == 1) {
+            nacitanieUlozH(newsockfd); //nacita nazvy ulozenych hier a posle ich klientovi
+            printf("kontrol\n");
+            int vyberS = nacitajPoradoveCislo(newsockfd);
+            posliVybrasSaveKlientovi(newsockfd,vyberS);
+        }
+        printf("kontrol\n");
+
+        close(newsockfd);
+    }
+    printf("kontrol\n");
 
     close(newsockfd);
+
     close(sockfd);
 
     return 0;
